@@ -2,7 +2,7 @@
 #include <fstream>
 #include <string.h>
 #include "Graph.h"
-#include "mpi.h"
+//#include "mpi.h"
 
 using namespace std;
 
@@ -10,7 +10,7 @@ using namespace std;
 
 int main (int argc, char *argv[])
 {
-MPI::Init(argc,argv);
+//MPI::Init(argc,argv);
 
 if (argc != 2) 
 	{
@@ -20,12 +20,12 @@ if (argc != 2)
 
 Graph G;
 G.lee(argv[1]);		// Read the Graph
-//cout << "EL Grafo de entrada es:"<<endl;
-//G.imprime();
+cout << "EL Grafo de entrada es:"<<endl;
+G.imprime();
 
 int nverts=G.vertices;
 
-double t=MPI::Wtime();
+//double t=MPI::Wtime();
 // BUCLE PPAL DEL ALGORITMO
 int i,j,k,vikj;
 for(k=0;k<nverts;k++)
@@ -39,13 +39,13 @@ for(k=0;k<nverts;k++)
          G.inserta_arista(i,j,vikj);   
         }
   }
-  t=MPI::Wtime()-t;
-  MPI::Finalize();
+  //t=MPI::Wtime()-t;
+  //MPI::Finalize();
 
  
   cout << endl<<"EL Grafo con las distancias de los caminos más cortos es:"<<endl<<endl;
   G.imprime();
-  cout<< "Tiempo gastado= "<<t<<endl<<endl;
+  //cout<< "Tiempo gastado= "<<t<<endl<<endl;
 
 
 }
