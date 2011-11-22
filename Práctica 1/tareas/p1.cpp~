@@ -1,0 +1,24 @@
+#include <mpi.h>
+#include <iostream>
+using namespace std;
+ 
+int main(int argc, char *argv[])
+{
+    int rank, size, dato=0;
+    MPI_Status estado;
+ 
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    
+    if(rank>1){
+		MPI_Recv(&dato,1,MPI_INT,rank-2,0,MPI_COMM_WORLD,&estado);
+		cout << "Soy el proceso "<< rank << " y he recibido " << dato << endl;
+	}
+ 	
+    if(rank<size-2)
+		MPI_Send(&rank,1,MPI_INT,rank+2,0,MPI_COMM_WORLD);
+	
+    MPI_Finalize();
+    return 0;
+}
