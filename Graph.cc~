@@ -53,9 +53,9 @@ void Graph::lee(char *filename)
 	std::ifstream infile(filename);
 
 	if (!infile){
-		cerr << "Nombre de archivo inválido \"" << filename << "\" !!" << endl;
-		cerr << "Saliendo........." << endl;
-		exit(-1);
+	cerr << "Nombre de archivo inválido \"" << filename << "\" !!" << endl;
+	cerr << "Saliendo........." << endl;
+	exit(-1);
 	}
 	//Obten el numero de vertices
 	char buf[BUF_SIZE];

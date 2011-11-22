@@ -10,20 +10,27 @@ using namespace std;
 //**************************************************************************
  
 int main (int argc, char *argv[]){
+	int rank, size;
 	MPI::Init(argc,argv);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int nverts;
  
-	if (argc != 2) 
-		{
-		 cerr << "Sintaxis: " << argv[0] << " <archivo de grafo>" << endl;
-		 exit(-1);
-		}
- 
+	if (argc != 2){
+		cerr << "Sintaxis: " << argv[0] << " <archivo de grafo>" << endl;
+		exit(-1);
+	}
+	
 	Graph G;
-	G.lee(argv[1]);		// Read the Graph
-	cout << "EL Grafo de entrada es:"<<endl;
-	G.imprime();
- 
-	int nverts=G.vertices;
+	
+	if(rank==0){
+		G.lee(argv[1]);
+		cout << "EL Grafo de entrada es:"<<endl;
+		G.imprime();
+		nverts=G.vertices;
+	}
+	
+	MPI_Bcast(&nverts, 1, MPI_INT, 0, MPI_COMM_WORLD);
  
 	Graph *I=&G;
  
@@ -40,9 +47,9 @@ int main (int argc, char *argv[]){
 		G=*I;
 	}
  
-  MPI::Finalize();
- 
- 
-  cout << endl<<"EL Grafo con las distancias de los caminos más cortos es:"<<endl<<endl;
-  I->imprime();
+	MPI::Finalize();
+
+	cout << endl<<"EL Grafo con las distancias de los caminos más cortos es:"<<endl<<endl;
+	I->imprime();
 }
+
