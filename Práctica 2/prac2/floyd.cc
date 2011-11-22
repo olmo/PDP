@@ -20,8 +20,8 @@ if (argc != 2)
 
 Graph G;
 G.lee(argv[1]);		// Read the Graph
-//cout << "EL Grafo de entrada es:"<<endl;
-//G.imprime();
+cout << "EL Grafo de entrada es:"<<endl;
+G.imprime();
 
 int nverts=G.vertices;
 
