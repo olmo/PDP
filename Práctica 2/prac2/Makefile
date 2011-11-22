@@ -1,5 +1,5 @@
 
-CC = g++ 
+CC = mpicxx 
 NAME = floyd
 CFLAGS = -O3
 
