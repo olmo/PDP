@@ -8,7 +8,7 @@ const int INF= 100000;
 //**************************************************************************
 class Graph //Adjacency List clas
 {
-	private:
+	public:
 	   int *A;
 	public:
            Graph();
