@@ -12,8 +12,9 @@ int main (int argc, char *argv[]){
 	//Inicialización de variables
 	int size, rank, rank_cartesiano;
 	int *buf_envio, *buf_recepcion;
-	int nverts;
+	int nverts, tam;
 	Graph G;
+	int *grafo;
 	
 	MPI_Init(&argc,&argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -34,8 +35,7 @@ int main (int argc, char *argv[]){
 	int periodos[] = {0, 0};//No sera periodica ninguna dimension.
 
 	MPI_Cart_create(MPI_COMM_WORLD, 2, dimensiones, periodos, true, &COMM_CART);
-
-	int tam = nverts/raiz_p;
+	
 	int coord[2];
 	
 	int rank_hor, rank_ver;
@@ -48,12 +48,15 @@ int main (int argc, char *argv[]){
 		cout << "EL Grafo de entrada es:"<<endl;
 		G.imprime();
 		nverts = G.vertices;
+		grafo = G.A;
 
 		if(nverts % (int)sqrt(size) != 0){
 			cerr << "Número de vertices no múltiplo de la raíz del número de procesos " << endl;
 			MPI_Finalize();
 			return (-1);
 		}
+		
+		tam = nverts/raiz_p;
 	
 		buf_envio = new int[nverts*nverts];
 		
@@ -66,27 +69,23 @@ int main (int argc, char *argv[]){
 		for (int i=0; i<size; i++){
 			fila_p = i/raiz_p;
 			columna_p = i%raiz_p;
-			comienzo=(columna_p*tam)+(fila_p*tam*tam*raiz_p);
-
-			MPI_Pack(&G.A[comienzo], 1, bloque, buf_envio, nverts*nverts, &posicion,  MPI_COMM_WORLD);
+			comienzo = (columna_p*tam)+(fila_p*tam*tam*raiz_p);
+			
+			MPI_Pack(&grafo[comienzo], 1, bloque, buf_envio, sizeof(int)*nverts*nverts, &posicion,  MPI_COMM_WORLD);
 		}
-		for(int i=0; i<nverts*nverts; i++)
-			cout << buf_envio[i] << " ";
-		cout << endl;
 		
 		//delete [] matriz_A;
 		MPI_Type_free(&bloque);
 	}
 	
+	MPI_Bcast(&tam, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	
 	buf_recepcion = new int[tam*tam];
 
-	/*Distribuimos la matriz entre los procesadores*/
-	MPI_Scatter(buf_envio, tam*tam, MPI_PACKED, buf_recepcion, tam*tam, MPI_FLOAT, 0,MPI_COMM_WORLD);
+	//Distribuimos la matriz entre los procesadores
+	MPI_Scatter(buf_envio, tam*tam, MPI_INT, buf_recepcion, tam*tam, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	
-	
-	/*
-	//Un comunicador por cada fila
+	//Un comunicador por cada fila y columna
 	MPI_Comm horizontal, vertical;
 	MPI_Comm_split(MPI_COMM_WORLD, rank/tam, 0, comm_horizontal);
 	MPI_Comm_split(MPI_COMM_WORLD, rank%tam, 0, comm_vertical);
@@ -100,6 +99,7 @@ int main (int argc, char *argv[]){
 	int *filak = new int[tam];
 	int *columna = new int[tam];
 	int i,j,k,vikj;
+	
 	for(k=0;k<nverts;k++){
 		if(rank == k%tam){
 			for (int i=0; i<tam; i++)
@@ -119,19 +119,17 @@ int main (int argc, char *argv[]){
 					vikj=min(vikj,G.arista(i,j));
 					G.inserta_arista(i,j,vikj);   
 				}
-	}*/
-	
-	
+	}
 
 	t=MPI_Wtime()-t;
+
+	if(rank==0){
+		cout << endl<<"EL Grafo con las distancias de los caminos más cortos es:" << endl;
+		G.imprime();
+		cout<< "Tiempo gastado= " << t << endl;
+	}
+	
 	MPI_Finalize();
-
-
-	cout << endl<<"EL Grafo con las distancias de los caminos más cortos es:" << endl;
-	G.imprime();
-	cout<< "Tiempo gastado= " << t << endl;
-
-
 }
 
 
