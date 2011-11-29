@@ -4,7 +4,6 @@
 #include "Graph.h"
 #include "mpi.h"
 #include <math.h>
-#include <cstdio>
 using namespace std;
 
 //**************************************************************************
@@ -75,8 +74,8 @@ int main (int argc, char *argv[]){
 	
 	//Creamos un comunicador por cada fila y columna, y un comunicador cartesiano
 	int dims[] = {raiz_p, raiz_p};
-    int periods[] = {0, 0};
-    int coord[2];
+	int periods[] = {0, 0};
+	int coord[2];
     
 	MPI_Comm comm_horizontal, comm_vertical, COMM_CART;
 	MPI_Comm_split(MPI_COMM_WORLD, rank/raiz_p, 0, &comm_horizontal);
