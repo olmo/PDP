@@ -16,7 +16,6 @@ int main (int argc, char *argv[]){
 	int nverts, tam;
 	Graph G;
 	int *grafo;
-	int *solucion;
 	
 	MPI_Init(&argc,&argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -29,9 +28,6 @@ int main (int argc, char *argv[]){
 	}
 	
 	int raiz_p = sqrt(size);
-	MPI_Datatype bloque;
-		MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque);
-		MPI_Type_commit(&bloque);
 
 	if(rank==0){
 		G.lee(argv[1]);
@@ -50,9 +46,9 @@ int main (int argc, char *argv[]){
 	
 		buf_envio = new int[nverts*nverts];
 		
-		/*MPI_Datatype bloque;
+		MPI_Datatype bloque;
 		MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque);
-		MPI_Type_commit(&bloque);*/
+		MPI_Type_commit(&bloque);
 
 		//Empaquetamos los datos a enviar
 		int posicion=0, fila_p, columna_p, comienzo;
@@ -64,7 +60,7 @@ int main (int argc, char *argv[]){
 			MPI_Pack(&grafo[comienzo], 1, bloque, buf_envio, sizeof(int)*nverts*nverts, &posicion,  MPI_COMM_WORLD);
 		}
 		
-		//MPI_Type_free(&bloque);
+		MPI_Type_free(&bloque);
 	}
 	
 	MPI_Bcast(&tam, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -136,27 +132,28 @@ int main (int argc, char *argv[]){
 	
 	t=MPI_Wtime()-t;
 	
-	solucion = new int[nverts*nverts];
-	MPI_Datatype bloque2;
-	MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque2);
-	MPI_Type_commit(&bloque2);
-	
 	int *temp = new int[nverts*nverts];
-	
 	MPI_Gather(buf_recepcion, tam*tam, MPI_INT, temp, tam*tam, MPI_INT, 0, MPI_COMM_WORLD);
-	
-	int posicion=0, fila_p, columna_p, comienzo;
-	for (int i=0; i<size; i++){
-		fila_p = i/raiz_p;
-		columna_p = i%raiz_p;
-		comienzo = (columna_p*tam)+(fila_p*tam*tam*raiz_p);
-		
-		MPI_Unpack(temp, sizeof(int)*nverts*nverts, &posicion, &solucion[comienzo], 1, bloque2, MPI_COMM_WORLD);
-	}
 
 	if(rank==0){
-		cout << endl<<"EL Grafo con las distancias de los caminos más cortos es:" << endl;
+		MPI_Datatype bloque;
+		MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque);
+		MPI_Type_commit(&bloque);
+		int *solucion = new int[nverts*nverts];
+		int posicion=0, fila_p, columna_p, comienzo;
+		
+		for (int i=0; i<size; i++){
+			fila_p = i/raiz_p;
+			columna_p = i%raiz_p;
+			comienzo = (columna_p*tam)+(fila_p*tam*tam*raiz_p);
+		
+			MPI_Unpack(temp, sizeof(int)*nverts*nverts, &posicion, &solucion[comienzo], 1, bloque, MPI_COMM_WORLD);
+		}
+		
+		MPI_Type_free(&bloque);
 		G.A = solucion;
+	
+		cout << endl<<"EL Grafo con las distancias de los caminos más cortos es:" << endl;
 		G.imprime();
 		cout<< "Tiempo gastado= " << t << endl<<endl;
 	}
