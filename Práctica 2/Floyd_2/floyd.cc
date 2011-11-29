@@ -38,11 +38,11 @@ int main (int argc, char *argv[]){
 		nverts = G.vertices;
 		grafo = G.A;
 
-		if(nverts % (int)sqrt(size) != 0){
+		/*if(nverts % (int)sqrt(size) != 0){
 			cerr << "Número de vertices no múltiplo de la raíz del número de procesos " << endl;
 			MPI_Finalize();
 			return (-1);
-		}
+		}*/
 		
 		tam = nverts/raiz_p;
 	
@@ -62,7 +62,6 @@ int main (int argc, char *argv[]){
 			MPI_Pack(&grafo[comienzo], 1, bloque, buf_envio, sizeof(int)*nverts*nverts, &posicion,  MPI_COMM_WORLD);
 		}
 		
-		//delete [] matriz_A;
 		MPI_Type_free(&bloque);
 	}
 	
@@ -76,8 +75,8 @@ int main (int argc, char *argv[]){
 	
 	//Un comunicador por cada fila y columna
 	MPI_Comm comm_horizontal, comm_vertical;
-	MPI_Comm_split(MPI_COMM_WORLD, rank/tam, 0, &comm_horizontal);
-	MPI_Comm_split(MPI_COMM_WORLD, rank%tam, 0, &comm_vertical);
+	MPI_Comm_split(MPI_COMM_WORLD, rank/raiz_p, 0, &comm_horizontal);
+	MPI_Comm_split(MPI_COMM_WORLD, rank%raiz_p, 0, &comm_vertical);
 	
 	MPI_Comm_rank(comm_horizontal, &rank_hor);
 	MPI_Comm_rank(comm_vertical, &rank_ver);
