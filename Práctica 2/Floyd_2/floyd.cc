@@ -131,6 +131,8 @@ int main (int argc, char *argv[]){
 				}
 	}
 	
+	t=MPI_Wtime()-t;
+	
 	solucion = new int[nverts*nverts];
 	MPI_Datatype bloque2;
 	MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque2);
@@ -148,8 +150,6 @@ int main (int argc, char *argv[]){
 		
 		MPI_Unpack(temp, sizeof(int)*nverts*nverts, &posicion, &solucion[comienzo], 1, bloque2, MPI_COMM_WORLD);
 	}
-
-	t=MPI_Wtime()-t;
 
 	if(rank==0){
 		cout << endl<<"EL Grafo con las distancias de los caminos más cortos es:" << endl;
