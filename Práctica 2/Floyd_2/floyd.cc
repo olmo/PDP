@@ -11,7 +11,7 @@ using namespace std;
 
 int main (int argc, char *argv[]){
 	//Inicialización de variables
-	int size, rank, rank_cartesiano;
+	int size, rank, rank_hor, rank_ver, rank_cart;
 	int *buf_envio, *buf_recepcion;
 	int nverts, tam;
 	Graph G;
@@ -29,7 +29,6 @@ int main (int argc, char *argv[]){
 	}
 	
 	int raiz_p = sqrt(size);
-	int rank_hor, rank_ver;
 
 	if(rank==0){
 		G.lee(argv[1]);
@@ -38,11 +37,11 @@ int main (int argc, char *argv[]){
 		nverts = G.vertices;
 		grafo = G.A;
 
-		/*if(nverts % (int)sqrt(size) != 0){
+		if(nverts % raiz_p != 0){
 			cerr << "Número de vertices no múltiplo de la raíz del número de procesos " << endl;
 			MPI_Finalize();
 			return (-1);
-		}*/
+		}
 		
 		tam = nverts/raiz_p;
 	
@@ -74,7 +73,7 @@ int main (int argc, char *argv[]){
 	MPI_Scatter(buf_envio, tam*tam, MPI_INT, buf_recepcion, tam*tam, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	//Un comunicador por cada fila y columna
-	MPI_Comm comm_horizontal, comm_vertical;
+	MPI_Comm comm_horizontal, comm_vertical, COMM_CART;
 	MPI_Comm_split(MPI_COMM_WORLD, rank/raiz_p, 0, &comm_horizontal);
 	MPI_Comm_split(MPI_COMM_WORLD, rank%raiz_p, 0, &comm_vertical);
 	
@@ -83,8 +82,6 @@ int main (int argc, char *argv[]){
 	
 	int dims[] = {raiz_p, raiz_p};
     int periods[] = {0, 0};
-    MPI_Comm COMM_CART;
-    int rank_cart;
     int coord[2];
 	
 	MPI_Cart_create(MPI_COMM_WORLD , 2, dims, periods, true, &COMM_CART);
@@ -106,6 +103,7 @@ int main (int argc, char *argv[]){
 		for(i=0; i<raiz_p; i++){
 			coord[0] = k/tam; coord[1] = i;
 			MPI_Cart_rank(COMM_CART, coord, &aux);
+			
 			if(rank_cart==aux){
 				for (int l=0; l<tam; l++)
 					filak[l] = buf_recepcion[k%tam*tam+l];
@@ -116,6 +114,7 @@ int main (int argc, char *argv[]){
 		for(i=0; i<raiz_p; i++){
 			coord[0] = i; coord[1] = k/tam;
 			MPI_Cart_rank(COMM_CART, coord, &aux);
+		
 			if(rank_cart==aux){
 				for (int l=0; l<tam; l++)
 					columnak[l] = buf_recepcion[k%tam+l*tam];
@@ -137,7 +136,9 @@ int main (int argc, char *argv[]){
 	MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque2);
 	MPI_Type_commit(&bloque2);
 	
-	MPI_Gather(buf_recepcion, tam*tam, MPI_INT, grafo, tam*tam, MPI_INT, 0, MPI_COMM_WORLD);
+	int *temp = new int[nverts*nverts];
+	
+	MPI_Gather(buf_recepcion, tam*tam, MPI_INT, temp, tam*tam, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	int posicion=0, fila_p, columna_p, comienzo;
 	for (int i=0; i<size; i++){
@@ -145,7 +146,7 @@ int main (int argc, char *argv[]){
 		columna_p = i%raiz_p;
 		comienzo = (columna_p*tam)+(fila_p*tam*tam*raiz_p);
 		
-		MPI_Unpack(grafo, sizeof(int)*nverts*nverts, &posicion, &solucion[comienzo], 1, bloque2, MPI_COMM_WORLD);
+		MPI_Unpack(temp, sizeof(int)*nverts*nverts, &posicion, &solucion[comienzo], 1, bloque2, MPI_COMM_WORLD);
 	}
 
 	t=MPI_Wtime()-t;
@@ -154,7 +155,7 @@ int main (int argc, char *argv[]){
 		cout << endl<<"EL Grafo con las distancias de los caminos más cortos es:" << endl;
 		G.A = solucion;
 		G.imprime();
-		cout<< "Tiempo gastado= " << t << endl;
+		cout<< "Tiempo gastado= " << t << endl<<endl;
 	}
 	
 	MPI_Finalize();
