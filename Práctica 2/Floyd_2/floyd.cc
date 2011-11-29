@@ -15,7 +15,7 @@ int main (int argc, char *argv[]){
 	int *buf_envio, *buf_recepcion;
 	int nverts, tam;
 	Graph G;
-	int *grafo;
+	int *grafo, *temp;
 	
 	MPI_Init(&argc,&argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -42,9 +42,11 @@ int main (int argc, char *argv[]){
 			return (-1);
 		}
 		
+		//La submatriz de cada proceso será de tam*tam
 		tam = nverts/raiz_p;
 	
 		buf_envio = new int[nverts*nverts];
+		temp = new int[nverts*nverts];
 		
 		MPI_Datatype bloque;
 		MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque);
@@ -63,42 +65,39 @@ int main (int argc, char *argv[]){
 		MPI_Type_free(&bloque);
 	}
 	
+	//Enviamos a todos los procesos el nº de vértices y tam
 	MPI_Bcast(&tam, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&nverts, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	buf_recepcion = new int[tam*tam];
-
 	//Distribuimos la matriz entre los procesadores
+	buf_recepcion = new int[tam*tam];
 	MPI_Scatter(buf_envio, tam*tam, MPI_INT, buf_recepcion, tam*tam, MPI_INT, 0, MPI_COMM_WORLD);
 	
-	//Un comunicador por cada fila y columna
-	MPI_Comm comm_horizontal, comm_vertical, COMM_CART;
-	MPI_Comm_split(MPI_COMM_WORLD, rank/raiz_p, 0, &comm_horizontal);
-	MPI_Comm_split(MPI_COMM_WORLD, rank%raiz_p, 0, &comm_vertical);
-	
-	MPI_Comm_rank(comm_horizontal, &rank_hor);
-	MPI_Comm_rank(comm_vertical, &rank_ver);
-	
+	//Creamos un comunicador por cada fila y columna, y un comunicador cartesiano
 	int dims[] = {raiz_p, raiz_p};
     int periods[] = {0, 0};
     int coord[2];
-	
+    
+	MPI_Comm comm_horizontal, comm_vertical, COMM_CART;
+	MPI_Comm_split(MPI_COMM_WORLD, rank/raiz_p, 0, &comm_horizontal);
+	MPI_Comm_split(MPI_COMM_WORLD, rank%raiz_p, 0, &comm_vertical);
 	MPI_Cart_create(MPI_COMM_WORLD , 2, dims, periods, true, &COMM_CART);
+	MPI_Comm_rank(comm_horizontal, &rank_hor);
+	MPI_Comm_rank(comm_vertical, &rank_ver);
 	MPI_Comm_rank(COMM_CART, &rank_cart);
 
-	// BUCLE PPAL DEL ALGORITMO
-	double t=MPI_Wtime();
-	
+	// Bucle principal del algoritmo
 	int *filak = new int[tam];
 	int *columnak = new int[tam];
-	int i,j,k,vikj;
+	int i,j,k,vikj, aux;
 	
 	int fila_f = rank/raiz_p*tam;
 	int columna_f = rank%raiz_p*tam;
 	
-	int aux, arriba, abajo, izq, der;
+	double t = MPI_Wtime();
 	
 	for(k=0;k<nverts;k++){
+		//Repartimos las filask entre los procesos correspondientes
 		for(i=0; i<raiz_p; i++){
 			coord[0] = k/tam; coord[1] = i;
 			MPI_Cart_rank(COMM_CART, coord, &aux);
@@ -110,6 +109,7 @@ int main (int argc, char *argv[]){
 			MPI_Bcast(filak, tam, MPI_INT, k/tam, comm_vertical);
 		}
 		
+		//Repartimos las columnask entre los procesos correspondientes
 		for(i=0; i<raiz_p; i++){
 			coord[0] = i; coord[1] = k/tam;
 			MPI_Cart_rank(COMM_CART, coord, &aux);
@@ -130,12 +130,13 @@ int main (int argc, char *argv[]){
 				}
 	}
 	
-	t=MPI_Wtime()-t;
+	t = MPI_Wtime()-t;
 	
-	int *temp = new int[nverts*nverts];
+	//Obtenemos en el proceso 0 todas las submatrices
 	MPI_Gather(buf_recepcion, tam*tam, MPI_INT, temp, tam*tam, MPI_INT, 0, MPI_COMM_WORLD);
 
 	if(rank==0){
+		//Desempaquetamos los datos para obtener la matriz final
 		MPI_Datatype bloque;
 		MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque);
 		MPI_Type_commit(&bloque);
@@ -155,7 +156,7 @@ int main (int argc, char *argv[]){
 	
 		cout << endl<<"EL Grafo con las distancias de los caminos más cortos es:" << endl;
 		G.imprime();
-		cout<< "Tiempo gastado= " << t << endl<<endl;
+		cout<< "Tiempo gastado= " << t << endl << endl;
 	}
 	
 	MPI_Finalize();
