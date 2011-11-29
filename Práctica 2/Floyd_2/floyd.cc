@@ -29,6 +29,9 @@ int main (int argc, char *argv[]){
 	}
 	
 	int raiz_p = sqrt(size);
+	MPI_Datatype bloque;
+		MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque);
+		MPI_Type_commit(&bloque);
 
 	if(rank==0){
 		G.lee(argv[1]);
@@ -47,11 +50,11 @@ int main (int argc, char *argv[]){
 	
 		buf_envio = new int[nverts*nverts];
 		
-		MPI_Datatype bloque;
+		/*MPI_Datatype bloque;
 		MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque);
-		MPI_Type_commit(&bloque);
+		MPI_Type_commit(&bloque);*/
 
-		//Empaquetamiento
+		//Empaquetamos los datos a enviar
 		int posicion=0, fila_p, columna_p, comienzo;
 		for (int i=0; i<size; i++){
 			fila_p = i/raiz_p;
@@ -61,7 +64,7 @@ int main (int argc, char *argv[]){
 			MPI_Pack(&grafo[comienzo], 1, bloque, buf_envio, sizeof(int)*nverts*nverts, &posicion,  MPI_COMM_WORLD);
 		}
 		
-		MPI_Type_free(&bloque);
+		//MPI_Type_free(&bloque);
 	}
 	
 	MPI_Bcast(&tam, 1, MPI_INT, 0, MPI_COMM_WORLD);
