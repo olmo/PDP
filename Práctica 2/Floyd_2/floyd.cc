@@ -12,7 +12,7 @@ int main (int argc, char *argv[]){
 	//Inicialización de variables
 	int size, rank, rank_hor, rank_ver, rank_cart;
 	int *buf_envio, *buf_recepcion;
-	int nverts, tam;
+	int nverts, tam, raiz_p;
 	Graph G;
 	int *grafo, *temp;
 	
@@ -26,20 +26,23 @@ int main (int argc, char *argv[]){
 		return(-1);
 	}
 	
-	int raiz_p = sqrt(size);
+	float raiz = sqrt(size);
 
 	if(rank==0){
 		G.lee(argv[1]);
-		cout << "EL Grafo de entrada es:"<<endl;
-		G.imprime();
 		nverts = G.vertices;
 		grafo = G.A;
 
-		if(nverts % raiz_p != 0){
-			cerr << "Número de vertices no múltiplo de la raíz del número de procesos " << endl;
-			MPI_Finalize();
+		if(fmod(nverts, raiz) != 0){
+			cerr << "\n\nNúmero de vertices no múltiplo de la raíz del número de procesos\n\n" << endl;
+			MPI_Abort(MPI_COMM_WORLD, 1);
 			return (-1);
 		}
+		
+		cout << "EL Grafo de entrada es:"<<endl;
+		G.imprime();
+		
+		raiz_p = sqrt(size);
 		
 		//La submatriz de cada proceso será de tam*tam
 		tam = nverts/raiz_p;
@@ -93,6 +96,7 @@ int main (int argc, char *argv[]){
 	int fila_f = rank/raiz_p*tam;
 	int columna_f = rank%raiz_p*tam;
 	
+	MPI_Barrier(MPI_COMM_WORLD);
 	double t = MPI_Wtime();
 	
 	for(k=0;k<nverts;k++){

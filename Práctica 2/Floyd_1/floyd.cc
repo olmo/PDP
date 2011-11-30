@@ -18,6 +18,7 @@ int main (int argc, char *argv[]){
  
 	if (argc != 2){
 		cerr << "Sintaxis: " << argv[0] << " <archivo de grafo>" << endl;
+		MPI_Finalize();	
 		exit(-1);
 	}
 	
@@ -25,14 +26,20 @@ int main (int argc, char *argv[]){
 	
 	if(rank==0){
 		G.lee(argv[1]);
+		nverts=G.vertices;
+		
+		if(nverts % size != 0){
+			cerr << "\n\nNúmero de vertices no múltiplo de la raíz del número de procesos\n\n" << endl;
+			MPI_Abort(MPI_COMM_WORLD, 1);
+			return (-1);
+		}
+		
 		cout << "EL Grafo de entrada es:"<<endl;
 		G.imprime();
-		nverts=G.vertices;
+		
 		I=&G;
 		grafo = G.A;
 	}
-	
-	double t=MPI_Wtime();
 	
 	MPI_Bcast(&nverts, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
@@ -54,6 +61,9 @@ int main (int argc, char *argv[]){
 	
 	int *filak = new int[nverts];
 	int vijk;
+	
+	MPI_Barrier(MPI_COMM_WORLD);
+	double t=MPI_Wtime();
 	
 	for(int k=0; k<nverts; k++){
 		//Si el proceso actual tiene la fila k la difunde a los demás procesos
