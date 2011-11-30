@@ -111,7 +111,7 @@ int main (int argc, char *argv[]){
 			MPI_Cart_rank(COMM_CART, coord, &aux);
 			
 			//Mediante el comunicador cartesiano sabemos qué proceso tiene la filak
-			//según la columna
+			//según la columna de dicho comunicador
 			if(rank_cart==aux){
 				for (int l=0; l<tam; l++)
 					filak[l] = buf_recepcion[k%tam*tam+l];
@@ -125,7 +125,7 @@ int main (int argc, char *argv[]){
 			MPI_Cart_rank(COMM_CART, coord, &aux);
 		
 			//Mediante el comunicador cartesiano sabemos qué proceso tiene la columnak
-			//según la fila
+			//según la fila de dicho comunicador
 			if(rank_cart==aux){
 				for (int l=0; l<tam; l++)
 					columnak[l] = buf_recepcion[k%tam+l*tam];
