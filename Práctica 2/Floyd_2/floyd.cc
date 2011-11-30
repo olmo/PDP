@@ -47,9 +47,11 @@ int main (int argc, char *argv[]){
 		//La submatriz de cada proceso será de tam*tam
 		tam = nverts/raiz_p;
 	
+		//Creamos 2 buffer para almacenar los datos a transmitir y a recibir de los demás procesos
 		buf_envio = new int[nverts*nverts];
 		temp = new int[nverts*nverts];
 		
+		//Creamos el tipo de dato para poder obtener las submatrices de nuestro vector
 		MPI_Datatype bloque;
 		MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque);
 		MPI_Type_commit(&bloque);
@@ -72,6 +74,7 @@ int main (int argc, char *argv[]){
 	MPI_Bcast(&nverts, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	//Distribuimos la matriz entre los procesadores
+	//Cada proceso almacena su submatriz en buf_recepcion
 	buf_recepcion = new int[tam*tam];
 	MPI_Scatter(buf_envio, tam*tam, MPI_INT, buf_recepcion, tam*tam, MPI_INT, 0, MPI_COMM_WORLD);
 	
@@ -89,10 +92,12 @@ int main (int argc, char *argv[]){
 	MPI_Comm_rank(COMM_CART, &rank_cart);
 
 	// Bucle principal del algoritmo
+	//Creamos los vectores para almacenar filak y columnak
 	int *filak = new int[tam];
 	int *columnak = new int[tam];
 	int i,j,k,vikj, aux;
 	
+	//Calculamos la fila y columna inicial de cada proceso con respecto a la matriz total
 	int fila_f = rank/raiz_p*tam;
 	int columna_f = rank%raiz_p*tam;
 	
@@ -105,6 +110,8 @@ int main (int argc, char *argv[]){
 			coord[0] = k/tam; coord[1] = i;
 			MPI_Cart_rank(COMM_CART, coord, &aux);
 			
+			//Mediante el comunicador cartesiano sabemos qué proceso tiene la filak
+			//según la columna
 			if(rank_cart==aux){
 				for (int l=0; l<tam; l++)
 					filak[l] = buf_recepcion[k%tam*tam+l];
@@ -117,6 +124,8 @@ int main (int argc, char *argv[]){
 			coord[0] = i; coord[1] = k/tam;
 			MPI_Cart_rank(COMM_CART, coord, &aux);
 		
+			//Mediante el comunicador cartesiano sabemos qué proceso tiene la columnak
+			//según la fila
 			if(rank_cart==aux){
 				for (int l=0; l<tam; l++)
 					columnak[l] = buf_recepcion[k%tam+l*tam];
@@ -124,6 +133,9 @@ int main (int argc, char *argv[]){
 			MPI_Bcast(columnak, tam, MPI_INT, k/tam, comm_horizontal);
 		}
 		
+		//Cada proceso recorre su submatriz tam*tam
+		//Con fila_f y columna_f comprobamos si es una casilla que hay que calcular según
+		//la matriz total
 		for(i=0;i<tam;i++)
 			for(j=0;j<tam;j++)
 				if (i+fila_f!=j+columna_f && i+fila_f!=k && j+columna_f!=k){
@@ -139,7 +151,7 @@ int main (int argc, char *argv[]){
 	MPI_Gather(buf_recepcion, tam*tam, MPI_INT, temp, tam*tam, MPI_INT, 0, MPI_COMM_WORLD);
 
 	if(rank==0){
-		//Desempaquetamos los datos para obtener la matriz final
+		//Desempaquetamos los datos para obtener la matriz final creando nuevamente un tipo de dato y lo almacenamos en solucion
 		MPI_Datatype bloque;
 		MPI_Type_vector(tam, tam, nverts, MPI_INT, &bloque);
 		MPI_Type_commit(&bloque);
